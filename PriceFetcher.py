@@ -8,19 +8,19 @@ import json
 
 class PriceFetcher:
 
-    min_wait = 1
-    max_wait = 3
+    min_wait = 2
+    max_wait = 4
     last_request_time = time.time()
 
-    # these headers are send with every GET request
+    # these headers are sent with every GET request
     base_headers = {
         'Accept-Language': 'en-US',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0'
     }
 
-    def fetch_prices(self, weapon, name, quality, stat_track):
+    def fetch_prices(self, weapon, name, quality, stat_trak):
         # get the url of the listing
-        listing_url = self.__get_skin_listing_url(weapon, name, quality, stat_track)
+        listing_url = self.__get_skin_listing_url(weapon, name, quality, stat_trak)
         if listing_url is None:
             return None
 
@@ -66,12 +66,12 @@ class PriceFetcher:
         except KeyError:
             return None
 
-    def __get_skin_listing_url(self, weapon, name, quality, stat_track):
+    def __get_skin_listing_url(self, weapon, name, quality, stat_trak):
         """Returns the url of a skin listing."""
 
         # build the search query
         query = ''
-        if stat_track:
+        if stat_trak:
             query = query + 'StatTrak™ '
         query = query + weapon + ' | ' + name + ' (' + quality + ')'
 
@@ -122,7 +122,7 @@ class PriceFetcher:
 
 if __name__ == '__main__':
     priceFetcher = PriceFetcher()
-    print(priceFetcher.fetch_prices(weapon='MAG-7', name='Justice', quality='Factory New', stat_track=False))
-    #print(priceFetcher.fetch_prices(weapon='AWP', name='Dragon Lore', quality='Factory New', stat_track=False))
-    #print(priceFetcher.fetch_prices(weapon='AWP', name='Dragon Lore', quality='Battle-Scarred', stat_track=False))
-    #print(priceFetcher.fetch_prices(weapon='asdf', name='asdf', quality='asdf', stat_track=False))
+    print(priceFetcher.fetch_prices(weapon='MAG-7', name='Justice', quality='Factory New', stat_trak=False))
+    print(priceFetcher.fetch_prices(weapon='AWP', name='Dragon Lore', quality='Factory New', stat_trak=False))
+    print(priceFetcher.fetch_prices(weapon='AWP', name='Dragon Lore', quality='Battle-Scarred', stat_trak=False))
+    print(priceFetcher.fetch_prices(weapon='asdf', name='asdf', quality='asdf', stat_trak=False))
