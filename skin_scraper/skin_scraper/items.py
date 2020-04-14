@@ -14,3 +14,13 @@ class SkinItem(scrapy.Item):
     name = scrapy.Field()
     rarity = scrapy.Field()
     collection = scrapy.Field()
+    quality = scrapy.Field()
+    stat_trak = scrapy.Field()
+    url = scrapy.Field()
+
+
+class FloatItem(scrapy.Item):
+    weapon = scrapy.Field()
+    name = scrapy.Field()
+    min_float = scrapy.Field()
+    max_float = scrapy.Field()

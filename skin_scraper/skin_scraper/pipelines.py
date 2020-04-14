@@ -8,6 +8,7 @@
 import sys
 sys.path.append("..") # this resolves import issues
 from csgo_database.skinsdb import SkinDB
+from skin_scraper.items import FloatItem
 
 
 class SkinScraperPipeline(object):
@@ -16,7 +17,16 @@ class SkinScraperPipeline(object):
         self.skindb = SkinDB()
 
     def process_item(self, item, spider):
-        # select skin if not already in database
-        if self.skindb.get_skin(item['weapon'], item['name']) is None:
-            self.skindb.insert_skin(item['weapon'], item['name'], item['rarity'], item['collection'])
+        if isinstance(item, FloatItem):
+            # insert float item if not in database
+            if self.skindb.get_float(weapon=item['weapon'], name=item['name']) is None:
+                self.skindb.insert_float(weapon=item['weapon'], name=item['name'], min_float=item['min_float'],
+                                         max_float=item['max_float'])
+        else:
+            # insert skin item if not in database
+            if self.skindb.get_skin(weapon=item['weapon'], name=item['name'], quality=item['quality'],
+                                    stat_trak=item['stat_trak']) is None:
+                self.skindb.insert_skin(weapon=item['weapon'], name=item['name'], rarity=item['rarity'],
+                                        collection=item['collection'], quality=item['quality'],
+                                        stat_trak=item['stat_trak'], url=item['url'])
         return item

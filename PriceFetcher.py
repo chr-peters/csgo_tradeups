@@ -4,12 +4,13 @@ import time
 import random
 import re
 import json
+from proxy_requests import ProxyRequests
 
 
 class PriceFetcher:
 
-    min_wait = 2
-    max_wait = 4
+    min_wait = 10
+    max_wait = 20
     last_request_time = time.time()
 
     # these headers are sent with every GET request
@@ -17,6 +18,9 @@ class PriceFetcher:
         'Accept-Language': 'en-US',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0'
     }
+
+    def __init__(self):
+        self.proxy_requests = ProxyRequests()
 
     def fetch_prices(self, weapon, name, quality, stat_trak):
         # get the url of the listing
@@ -40,6 +44,7 @@ class PriceFetcher:
         }
         self.__wait()
         res = requests.get(url=url, params=params, headers=self.base_headers)
+        # res = self.proxy_requests.get(url=url, params=params, headers=self.base_headers)
         try:
             res_json = json.loads(res.text)
         except json.decoder.JSONDecodeError:
@@ -83,6 +88,7 @@ class PriceFetcher:
         }
         self.__wait()
         res = requests.get(url, params=params, headers=self.base_headers)
+        # res = self.proxy_requests.get(url, params=params, headers=self.base_headers)
 
         # extract the resulting url
         bs = BeautifulSoup(res.text, features='lxml')
@@ -109,14 +115,20 @@ class PriceFetcher:
         # make the request to the listing url
         self.__wait()
         res = requests.get(url=url, headers=self.base_headers)
+        # res = self.proxy_requests.get(url=url, headers=self.base_headers)
 
         # the item id is hidden in the javascript, so use a regex
         match = re.search('Market_LoadOrderSpread\\((.*)\\)', res.text)
+
+        if match is None:
+            print(res.status_code)
 
         try:
             item_id = match.group(1).strip()
             return item_id
         except IndexError:
+            return None
+        except AttributeError:
             return None
 
 
