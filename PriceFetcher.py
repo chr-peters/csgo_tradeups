@@ -9,8 +9,8 @@ from proxy_requests import ProxyRequests
 
 class PriceFetcher:
 
-    min_wait = 10
-    max_wait = 20
+    min_wait = 1
+    max_wait = 2
     last_request_time = time.time()
 
     # these headers are sent with every GET request
@@ -22,16 +22,7 @@ class PriceFetcher:
     def __init__(self):
         self.proxy_requests = ProxyRequests()
 
-    def fetch_prices(self, weapon, name, quality, stat_trak):
-        # get the url of the listing
-        listing_url = self.__get_skin_listing_url(weapon, name, quality, stat_trak)
-        if listing_url is None:
-            return None
-
-        # now get the id of the item which is needed to get the buy and sell order histograms
-        item_name_id = self.__get_item_name_id(listing_url)
-        if item_name_id is None:
-            return None
+    def fetch_prices(self, item_name_id):
 
         # make the request to the histogram api
         url = 'https://steamcommunity.com/market/itemordershistogram'
@@ -45,9 +36,15 @@ class PriceFetcher:
         self.__wait()
         res = requests.get(url=url, params=params, headers=self.base_headers)
         # res = self.proxy_requests.get(url=url, params=params, headers=self.base_headers)
+
+        if not res.ok:
+            print('Could not fetch price. Status code: {}, reason: {}'.format(res.status_code, res.reason))
+            return None
+
         try:
             res_json = json.loads(res.text)
         except json.decoder.JSONDecodeError:
+            print('Could not decode json.')
             return None
 
         # get the max. 10 lowest sell prices
@@ -58,48 +55,19 @@ class PriceFetcher:
                     break
                 for i in range(cur_price_level[1] - len(sell_prices)):
                     sell_prices.append(cur_price_level[0])
-                    if len(sell_prices) > 10:
+                    if len(sell_prices) >= 10:
                         break
 
             # build the result
             result = {
-                'highest_buy_order': res_json['buy_order_graph'][0][0],
+                'highest_buy_order': round(float(res_json['highest_buy_order'])/100, 2),
                 'lowest_sell_orders': sell_prices
             }
 
             return result
         except KeyError:
+            print('Key Error.')
             return None
-
-    def __get_skin_listing_url(self, weapon, name, quality, stat_trak):
-        """Returns the url of a skin listing."""
-
-        # build the search query
-        query = ''
-        if stat_trak:
-            query = query + 'StatTrak™ '
-        query = query + weapon + ' | ' + name + ' (' + quality + ')'
-
-        # make the GET-Request
-        url = 'https://steamcommunity.com/market/search'
-        params = {
-            'appid': 730,
-            'q': '"' + query + '"'
-        }
-        self.__wait()
-        res = requests.get(url, params=params, headers=self.base_headers)
-        # res = self.proxy_requests.get(url, params=params, headers=self.base_headers)
-
-        # extract the resulting url
-        bs = BeautifulSoup(res.text, features='lxml')
-        result_rows = bs.select('a.market_listing_row_link')
-        # filter through the rows to find the right skin
-        for cur_row in result_rows:
-            cur_title = cur_row.select('span.market_listing_item_name')[0].string
-            if cur_title == query:
-                return cur_row['href']
-
-        return None
 
     def __wait(self):
         """Waits before the next request"""
@@ -109,32 +77,7 @@ class PriceFetcher:
         time.sleep(sleep_time)
         self.last_request_time = time.time()
 
-    def __get_item_name_id(self, url):
-        """Parses the item_name_id from a listing url which is needed to get the buy order and sell order histograms."""
-
-        # make the request to the listing url
-        self.__wait()
-        res = requests.get(url=url, headers=self.base_headers)
-        # res = self.proxy_requests.get(url=url, headers=self.base_headers)
-
-        # the item id is hidden in the javascript, so use a regex
-        match = re.search('Market_LoadOrderSpread\\((.*)\\)', res.text)
-
-        if match is None:
-            print(res.status_code)
-
-        try:
-            item_id = match.group(1).strip()
-            return item_id
-        except IndexError:
-            return None
-        except AttributeError:
-            return None
-
 
 if __name__ == '__main__':
     priceFetcher = PriceFetcher()
-    print(priceFetcher.fetch_prices(weapon='MAG-7', name='Justice', quality='Factory New', stat_trak=False))
-    print(priceFetcher.fetch_prices(weapon='AWP', name='Dragon Lore', quality='Factory New', stat_trak=False))
-    print(priceFetcher.fetch_prices(weapon='AWP', name='Dragon Lore', quality='Battle-Scarred', stat_trak=False))
-    print(priceFetcher.fetch_prices(weapon='asdf', name='asdf', quality='asdf', stat_trak=False))
+    print(priceFetcher.fetch_prices('176012395'))
